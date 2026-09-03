@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import validator from "validator";
 import { urlService } from "../services/url.service";
 
 export class UrlController {
@@ -13,12 +14,16 @@ export class UrlController {
         });
       }
 
-      try {
-        new URL(url);
-      } catch (error) {
+      const isValid = validator.isURL(url, {
+        protocols: ["http", "https"],
+        require_protocol: true,
+        require_tld: true,
+      });
+
+      if (!isValid) {
         return res.status(400).json({
           success: false,
-          message: "Invalid URL format. Must include protocol (e.g. https://)",
+          message: "Invalid URL. Must be a valid HTTP or HTTPS address with a domain (e.g. https://example.com)",
         });
       }
 
