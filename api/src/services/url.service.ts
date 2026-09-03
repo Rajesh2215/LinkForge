@@ -1,20 +1,33 @@
-import { Request, Response } from "express"
 import { generateShortCode } from "../utils/base62";
 
+export interface UrlRecord {
+  url: string;
+  shortCode: string;
+  createdAt: Date;
+}
+
 export class UrlService {
+  private urls = new Map<string, UrlRecord>();
 
-  async create(req: Request, res: Response) {
+  async shortenUrl(url: string): Promise<UrlRecord> {
+    let code = generateShortCode();
 
-    let code = generateShortCode()
+    while (this.urls.has(code)) {
+      code = generateShortCode();
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: 'URL created successfully',
-      data: {
-        ...req.body,
-        code
-      }
-    })
+    const record: UrlRecord = {
+      url,
+      shortCode: code,
+      createdAt: new Date(),
+    };
+
+    this.urls.set(code, record);
+    return record;
+  }
+
+  async getOriginalUrl(shortCode: string): Promise<UrlRecord | null> {
+    return this.urls.get(shortCode) || null;
   }
 }
 
