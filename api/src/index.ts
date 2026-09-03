@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import urlRoutes from './routes/url.route'
 
 dotenv.config();
 
@@ -33,6 +34,8 @@ app.get('/', (req: Request, res: Response) => {
     docs: '/health',
   });
 });
+
+app.use('/api', urlRoutes);
 
 // 404 Handler
 app.use((req: Request, res: Response) => {
