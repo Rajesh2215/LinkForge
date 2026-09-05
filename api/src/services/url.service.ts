@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { generateShortCode } from "../utils/base62";
 
 export class ValidationError extends Error {
@@ -20,9 +21,9 @@ export interface UrlRecord {
   createdAt: Date;
   expiresAt?: Date;
 }
-
+//todo: Start from untegrating prisma here
 export class UrlService {
-  private urls = new Map<string, UrlRecord>();
+  // private urls = new Map<string, UrlRecord>();
 
   // Allow alphanumeric characters, hyphens, and underscores for readable aliases
   private isAliasValid = (alias: string) => /^[a-zA-Z0-9_-]+$/.test(alias);
@@ -68,7 +69,10 @@ export class UrlService {
         throw new ValidationError(`The alias "${customAlias}" is a reserved word and cannot be used.`);
       }
 
-      if (this.urls.has(customAlias)) {
+      const existing = await prisma.url.findUnique({
+        where: { shortCode: customAlias },
+      });
+      if (existing) {
         throw new ConflictError(`Custom alias "${customAlias}" already exists. Please choose a different one.`);
       }
 
@@ -76,35 +80,55 @@ export class UrlService {
     } else {
 
       code = generateShortCode();
-      while (this.urls.has(code)) {
+      while (await prisma.url.findUnique({
+        where: { shortCode: code },
+      })) {
         code = generateShortCode();
       }
     }
 
-    const record: UrlRecord = {
-      url,
-      shortCode: code,
-      createdAt: new Date(),
-      expiresAt: expiryDate,
-    };
+    const record = await prisma.url.create({
+      data: {
+        url,
+        shortCode: code,
+        expiresAt: expiryDate,
+      },
+    });
 
-    this.urls.set(code, record);
-    return record;
+    return {
+      url: record.url,
+      shortCode: record.shortCode,
+      createdAt: record.createdAt,
+      expiresAt: record.expiresAt ?? undefined,
+
+    };
   }
 
   async getOriginalUrl(shortCode: string): Promise<{ record: UrlRecord | null; isExpired: boolean }> {
-    const record = this.urls.get(shortCode);
+    const record = await prisma.url.findUnique({
+      where: { shortCode },
+    });
 
     if (!record) {
       return { record: null, isExpired: false };
     }
 
     if (record.expiresAt && record.expiresAt.getTime() <= Date.now()) {
-      this.urls.delete(shortCode);
+      await prisma.url.delete({
+        where: { shortCode },
+      });
       return { record: null, isExpired: true };
     }
 
-    return { record, isExpired: false };
+    return {
+      record: {
+        url: record.url,
+        shortCode: record.shortCode,
+        createdAt: record.createdAt,
+        expiresAt: record?.expiresAt!,
+      },
+      isExpired: false
+    };
   }
 }
 
