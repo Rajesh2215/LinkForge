@@ -63,4 +63,4 @@ const getCacheRecord = async (key: string): Promise<string | null> => {
   }
 };
 
-export { setCacheRecord, deleteCacheRecord, getCacheRecord };
+export { redis, setCacheRecord, deleteCacheRecord, getCacheRecord };

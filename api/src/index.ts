@@ -5,11 +5,19 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import apiRouter from './routes';
 import { urlController } from './controller/url.controller';
+import { rateLimiter } from './lib/rateLimiter';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const redirectUrlLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  limit: 10,
+  keyPrefix: "redirect-url",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(helmet());
 app.use(cors());
@@ -37,7 +45,7 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api', apiRouter);
 
 // 2. Fast public redirect for short links (GET /:shortCode -> 302 Redirect)
-app.get('/:shortCode', (req: Request, res: Response) => {
+app.get('/:shortCode', redirectUrlLimiter, (req: Request, res: Response) => {
   urlController.redirect(req, res);
 });
 
