@@ -20,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(),
     uptime: process.uptime(),
   });
 });
@@ -29,7 +29,7 @@ app.get('/', (req: Request, res: Response) => {
   res.status(200).json({
     message: 'Welcome to LinkForge API',
     version: '1.0.0',
-    docs: '/health',
+    docs: '/health'
   });
 });
 

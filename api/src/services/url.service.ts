@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma";
+import { setCacheRecord, getCacheRecord } from "../lib/redis";
 import { generateShortCode } from "../utils/base62";
 
 export class ValidationError extends Error {
@@ -21,7 +22,6 @@ export interface UrlRecord {
   createdAt: Date;
   expiresAt?: Date;
 }
-//todo: Start from untegrating prisma here
 export class UrlService {
   // private urls = new Map<string, UrlRecord>();
 
@@ -95,6 +95,13 @@ export class UrlService {
       },
     });
 
+    await setCacheRecord(record.shortCode, {
+      url: record.url,
+      shortCode: record.shortCode,
+      createdAt: record.createdAt,
+      expiresAt: record.expiresAt ?? undefined,
+    });
+
     return {
       url: record.url,
       shortCode: record.shortCode,
@@ -105,6 +112,12 @@ export class UrlService {
   }
 
   async getOriginalUrl(shortCode: string): Promise<{ record: UrlRecord | null; isExpired: boolean }> {
+
+    const cachedRecord = await getCacheRecord(shortCode);
+    if (cachedRecord) {
+      return { record: JSON.parse(cachedRecord), isExpired: false };
+    }
+
     const record = await prisma.url.findUnique({
       where: { shortCode },
     });
@@ -119,16 +132,16 @@ export class UrlService {
       });
       return { record: null, isExpired: true };
     }
-
-    return {
-      record: {
-        url: record.url,
-        shortCode: record.shortCode,
-        createdAt: record.createdAt,
-        expiresAt: record?.expiresAt!,
-      },
-      isExpired: false
+    const urlRecord: UrlRecord = {
+      url: record.url,
+      shortCode: record.shortCode,
+      createdAt: record.createdAt,
+      expiresAt: record.expiresAt ?? undefined,
     };
+
+    await setCacheRecord(shortCode, urlRecord);
+
+    return { record: urlRecord, isExpired: false };
   }
 }
 

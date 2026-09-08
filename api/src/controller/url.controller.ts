@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import validator from "validator";
 import { urlService, ValidationError, ConflictError } from "../services/url.service";
-import { toISTString } from "../utils/time";
 
 export class UrlController {
   async create(req: Request, res: Response) {
@@ -38,8 +37,8 @@ export class UrlController {
           url: record.url,
           shortCode: record.shortCode,
           shortUrl: `${baseUrl}/${record.shortCode}`,
-          createdAt: toISTString(record.createdAt),
-          expiresAt: record.expiresAt ? toISTString(record.expiresAt) : undefined,
+          createdAt: record.createdAt,
+          expiresAt: record.expiresAt ? record.expiresAt : undefined,
         },
       });
     } catch (error: any) {
@@ -89,8 +88,8 @@ export class UrlController {
         data: {
           url: record.url,
           shortCode: record.shortCode,
-          createdAt: toISTString(record.createdAt),
-          expiresAt: record.expiresAt ? toISTString(record.expiresAt) : undefined,
+          createdAt: record.createdAt,
+          expiresAt: record.expiresAt ? record.expiresAt : undefined,
         },
       });
     } catch (error: any) {
