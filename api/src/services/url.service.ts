@@ -142,6 +142,70 @@ export class UrlService {
 
     return { record: urlRecord, isExpired: false };
   }
+
+  async getAnalytics(shortCode: string) {
+    let urlRecord: { url: string; shortCode: string } | null = null;
+    const cachedRecord = await getCacheRecord(shortCode);
+    if (cachedRecord) {
+      urlRecord = JSON.parse(cachedRecord);
+    } else {
+      urlRecord = await prisma.url.findUnique({
+        where: { shortCode },
+        select: { url: true, shortCode: true },
+      });
+    }
+
+    if (!urlRecord) {
+      return null;
+    }
+    const [totalClicks, browserCounts, deviceCounts, refererCounts, recentClicks] = await Promise.all([
+      prisma.clickEvent.count({ where: { shortCode } }),
+      prisma.clickEvent.groupBy({
+        by: ["browser"],
+        where: { shortCode },
+        _count: { browser: true },
+      }),
+      prisma.clickEvent.groupBy({
+        by: ["device"],
+        where: { shortCode },
+        _count: { device: true },
+      }),
+      prisma.clickEvent.groupBy({
+        by: ["referer"],
+        where: { shortCode },
+        _count: { referer: true },
+      }),
+      prisma.clickEvent.findMany({
+        where: { shortCode },
+        take: 10,
+        orderBy: { clickedAt: "desc" },
+        select: {
+          clickedAt: true,
+          browser: true,
+          device: true,
+          referer: true,
+        },
+      }),
+    ]);
+
+    return {
+      shortCode,
+      originalUrl: urlRecord.url,
+      totalClicks,
+      breakdown: {
+        browser: browserCounts.map((row) => ({ name: row.browser || "Unknown", count: row._count.browser })),
+        device: deviceCounts.map((row) => ({ name: row.device || "Unknown", count: row._count.device })),
+        referer: refererCounts.map((row) => ({ name: row.referer || "Unknown", count: row._count.referer })),
+        recentClicks: recentClicks.map((click) => ({
+          timestamp: click.clickedAt,
+          browser: click.browser || "Unknown",
+          device: click.device || "Unknown",
+          referer: click.referer || "Direct",
+        })),
+      },
+    };
+  }
+
 }
 
 export const urlService = new UrlService();

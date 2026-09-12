@@ -24,4 +24,6 @@ router.post("/", createUrlLimiter, getUrlLimiter, (req, res) => urlController.cr
 
 router.get("/:shortCode", getUrlLimiter, (req, res) => urlController.getOriginal(req, res));
 
+router.get("/:shortCode/analytics", getUrlLimiter, (req, res) => urlController.getAnalytics(req, res));
+
 export default router;

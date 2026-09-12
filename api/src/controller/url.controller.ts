@@ -145,6 +145,33 @@ export class UrlController {
       });
     }
   }
+
+  async getAnalytics(req: Request, res: Response) {
+    try {
+
+      const shortCode = req.params.shortCode
+      const analytics = await urlService.getAnalytics(shortCode)
+
+      if (!analytics) {
+        return res.status(404).json({
+          success: false,
+          message: "URL not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Analytics fetched successfully",
+        data: analytics,
+      });
+    } catch (error: any) {
+      console.error("Unhandled error in getAnalytics:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
 }
 
 export const urlController = new UrlController();
