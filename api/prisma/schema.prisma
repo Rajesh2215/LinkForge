@@ -4,7 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -13,12 +13,34 @@ datasource db {
 }
 
 model Url {
-  id           Int      @id @default(autoincrement())
-  url          String   @db.Text()
-  shortCode    String   @unique @db.VarChar(20)
-  createdAt    DateTime @default(now())
-  expiresAt    DateTime?
+  id          Int          @id @default(autoincrement())
+  url         String       @db.Text()
+  shortCode   String       @unique @db.VarChar(20)
+  createdAt   DateTime     @default(now())
+  expiresAt   DateTime?
+  clickEvents ClickEvent[]
 
   @@index([shortCode])
   @@map("urls")
+}
+
+model ClickEvent {
+  id        String   @id @default(cuid()) // easier to work with UUIDs in code
+  eventId   String   @unique
+  shortCode String
+  clickedAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?  @db.Text     // User-Agent headers can exceed 500+ chars (e.g. custom bots/extensions), @db.Text avoids VARCHAR(255) truncation
+  browser   String?
+  device    String?
+  referer   String?
+  country   String?
+
+  // Foreign Key relationship: Links click event to parent Url
+  // onDelete: Cascade ensures when an expired Url is deleted, its click history is automatically cleaned up (no orphaned rows)
+  url       Url      @relation(fields: [shortCode], references: [shortCode], onDelete: Cascade)
+
+  @@index([shortCode])
+  @@index([clickedAt])
+  @@map("click_events")                       // Maps TypeScript model `ClickEvent` to PostgreSQL table `click_events` (snake_case convention)
 }

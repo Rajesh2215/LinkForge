@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import apiRouter from './routes';
 import { urlController } from './controller/url.controller';
 import { rateLimiter } from './lib/rateLimiter';
+import { initKafkaProducer, disconnectKafkaProducer } from './lib/kafka';
 
 dotenv.config();
 
@@ -66,22 +67,34 @@ app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-// Start Server
-const server = app.listen(PORT, () => {
-  console.log(`🚀 LinkForge API is running at http://localhost:${PORT}`);
-  console.log(`🩺 Health check available at http://localhost:${PORT}/health`);
-});
 
-// Graceful Shutdown
-const handleShutdown = (signal: string) => {
-  console.log(`\nReceived ${signal}. Shutting down gracefully...`);
-  server.close(() => {
-    console.log('HTTP server closed.');
-    process.exit(0);
-  });
+const startServer = async () => {
+  try {
+
+    await initKafkaProducer();
+
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 LinkForge API is running at http://localhost:${PORT}`);
+      console.log(`🩺 Health check available at http://localhost:${PORT}/health`);
+    });
+
+    const handleShutdown = async (signal: string) => {
+      console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+      await disconnectKafkaProducer();
+      server.close(() => {
+        console.log("HTTP server closed.");
+        process.exit(0);
+      });
+    };
+
+    process.on("SIGINT", () => handleShutdown("SIGINT"));
+    process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+  } catch (error) {
+    console.error("❌ Fatal error during server startup:", error);
+    process.exit(1);
+  }
 };
 
-process.on('SIGINT', () => handleShutdown('SIGINT'));
-process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+startServer();
 
 export default app;

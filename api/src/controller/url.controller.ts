@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import validator from "validator";
 import { urlService, ValidationError, ConflictError } from "../services/url.service";
+import { emitClickEvent } from "../lib/kafka";
+import { randomUUID } from "node:crypto";
 
 export class UrlController {
   async create(req: Request, res: Response) {
@@ -103,6 +105,10 @@ export class UrlController {
 
   async redirect(req: Request, res: Response) {
     try {
+      const ipAddress = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
+      const userAgent = req.headers["user-agent"] || "unknown";
+      const referer = (req.headers["referer"] || req.headers["referrer"] || "direct") as string;
+
       const { record, isExpired } = await urlService.getOriginalUrl(req.params.shortCode);
 
       if (isExpired) {
@@ -118,6 +124,16 @@ export class UrlController {
           message: "Short URL not found",
         });
       }
+
+      // 🚀 Fire-and-forget: emit event in background (DO NOT await before redirecting!)
+      emitClickEvent({
+        eventId: randomUUID(),
+        shortCode: req.params.shortCode,
+        clickedAt: new Date().toISOString(),
+        ipAddress,
+        userAgent,
+        referer,
+      });
 
       // 302 Found: Temporary Redirect
       return res.redirect(302, record.url);
