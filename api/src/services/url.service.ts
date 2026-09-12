@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { setCacheRecord, getCacheRecord } from "../lib/redis";
+import { setCacheRecord, getCacheRecord, deleteCacheRecord } from "../lib/redis";
 import { generateShortCode } from "../utils/base62";
 
 export class ValidationError extends Error {
@@ -127,9 +127,8 @@ export class UrlService {
     }
 
     if (record.expiresAt && record.expiresAt.getTime() <= Date.now()) {
-      await prisma.url.delete({
-        where: { shortCode },
-      });
+      await prisma.url.delete({ where: { shortCode } });
+      await deleteCacheRecord(shortCode);
       return { record: null, isExpired: true };
     }
     const urlRecord: UrlRecord = {
