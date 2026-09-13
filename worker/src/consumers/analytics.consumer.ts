@@ -9,6 +9,8 @@ const kafka = new Kafka({
 
 export const consumer = kafka.consumer({
   groupId: "linkforge-analytics-group",
+  maxWaitTimeInMs: 5000,    // will trigger eachbatch after 5 seconds if there are no messages
+  maxBytes: 1024 * 512,     // will trigger eachbatch after 512 bytes of messages
 });
 
 export const startAnalyticsConsumer = async (): Promise<void> => {
@@ -16,22 +18,25 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
     await consumer.connect();
     await consumer.subscribe({ topic: 'url-clicks', fromBeginning: false })
     await consumer.run({
-      eachMessage: async ({ topic, partition, message }) => {
-        if (!message.value) return;
+      eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
+        const recordsToInsert = [];
 
-        const event = JSON.parse(message.value.toString());
+        // 1. Loop through batch ONLY to parse and enrich
+        for (const message of batch.messages) {
+          if (!isRunning() || isStale()) {
+            break;
+          }
+          if (!message.value) continue;
 
-        // 1. Enrich User-Agent
-        const parser = new UAParser(event.userAgent);
-        const uaResult = parser.getResult();
+          try {
+            const event = JSON.parse(message.value.toString());
 
-        const browser = uaResult.browser.name || "Unknown";
-        const device = uaResult.device.type || "Desktop";
+            const parser = new UAParser(event.userAgent);
+            const uaResult = parser.getResult();
+            const browser = uaResult.browser.name || "Unknown";
+            const device = uaResult.device.type || "Desktop";
 
-        // 2. Persist to PostgreSQL (Idempotent!)
-        try {
-          await prisma.clickEvent.create({
-            data: {
+            recordsToInsert.push({
               eventId: event.eventId,
               shortCode: event.shortCode,
               clickedAt: new Date(event.clickedAt),
@@ -40,19 +45,34 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
               browser,
               device,
               referer: event.referer || "Direct",
-              country: "Unknown", // Can add GeoIP lookup later
-            },
-          });
+              country: "Unknown",
+            });
 
-          console.log(`📊 Analytics recorded for /${event.shortCode} [${browser} on ${device}]`);
-        } catch (err: any) {
-          // If duplicate eventId, PostgreSQL unique constraint catches it safely
-          if (err.code === "P2002") {
-            console.warn(`Duplicate event ${event.eventId} skipped.`);
-          } else {
-            console.error("Failed to insert click event:", err);
+            // Mark this message offset as resolved in memory
+            resolveOffset(message.offset);
+          } catch (error) {
+            console.error("Failed to parse click event in batch:", error);
           }
         }
+
+        // 2. Insert ALL records in ONE single database query (OUTSIDE the loop!)
+        if (recordsToInsert.length > 0) {
+          try {
+            const result = await prisma.clickEvent.createMany({
+              data: recordsToInsert,
+              skipDuplicates: true, // Idempotent
+            });
+
+            console.log(
+              `📊 Batch processed: ${result.count} new clicks recorded (Batch size: ${recordsToInsert.length})`
+            );
+          } catch (error) {
+            console.error("Failed to bulk insert click events:", error);
+          }
+        }
+
+        // 3. Send heartbeat to Kafka broker
+        await heartbeat();
       },
     });
 
