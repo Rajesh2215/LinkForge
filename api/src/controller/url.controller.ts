@@ -107,7 +107,7 @@ export class UrlController {
     try {
       const ipAddress = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "unknown";
       const userAgent = req.headers["user-agent"] || "unknown";
-      const referer = (req.headers["referer"] || req.headers["referrer"] || "direct") as string;
+      const referer = (req.query.src === 'qr' ? "qr-code" : req.headers["referer"] || req.headers["referrer"] || "direct") as string;
 
       const { record, isExpired } = await urlService.getOriginalUrl(req.params.shortCode);
 
@@ -166,6 +166,40 @@ export class UrlController {
       });
     } catch (error: any) {
       console.error("Unhandled error in getAnalytics:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  }
+
+  async getQrCode(req: Request, res: Response) {
+    try {
+      const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+      const format = req.query.format === "svg" ? "svg" : "png";
+
+      const shortCode = req.params.shortCode
+      if (!shortCode) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid Short Code",
+        })
+      }
+      const fullUrl = `${baseUrl}/${shortCode}?src=qr`;
+
+      const qrImageBuffer = await urlService.generateQR(shortCode, fullUrl, format)
+      if (!qrImageBuffer) {
+        return res.status(404).json({
+          success: false,
+          message: "Short URL not found",
+        });
+      }
+
+      res.setHeader('Content-Type', `image/${format === "svg" ? "svg+xml" : "png"}`);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(qrImageBuffer);
+    } catch (error: any) {
+      console.error("Unhandled error in getQrCode:", error);
       return res.status(500).json({
         success: false,
         message: "Internal server error",

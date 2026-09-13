@@ -1,7 +1,7 @@
+import QRCode from 'qrcode';
 import { prisma } from "../lib/prisma";
 import { setCacheRecord, getCacheRecord, deleteCacheRecord } from "../lib/redis";
 import { generateShortCode } from "../utils/base62";
-
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -144,18 +144,11 @@ export class UrlService {
   }
 
   async getAnalytics(shortCode: string) {
-    let urlRecord: { url: string; shortCode: string } | null = null;
-    const cachedRecord = await getCacheRecord(shortCode);
-    if (cachedRecord) {
-      urlRecord = JSON.parse(cachedRecord);
-    } else {
-      urlRecord = await prisma.url.findUnique({
-        where: { shortCode },
-        select: { url: true, shortCode: true },
-      });
-    }
 
-    if (!urlRecord) {
+    const { record, isExpired } = await this.getOriginalUrl(shortCode);
+    if (!record || isExpired) return null;
+
+    if (!record) {
       return null;
     }
     const [totalClicks, browserCounts, deviceCounts, refererCounts, recentClicks] = await Promise.all([
@@ -190,7 +183,7 @@ export class UrlService {
 
     return {
       shortCode,
-      originalUrl: urlRecord.url,
+      originalUrl: record.url,
       totalClicks,
       breakdown: {
         browser: browserCounts.map((row) => ({ name: row.browser || "Unknown", count: row._count.browser })),
@@ -204,6 +197,27 @@ export class UrlService {
         })),
       },
     };
+  }
+
+  async generateQR(shortCode: string, fullUrl: string, format: string): Promise<Buffer | string | null> {
+
+    const { record, isExpired } = await this.getOriginalUrl(shortCode);
+    if (!record || isExpired) return null;
+
+    if (format === "svg") {
+      return await QRCode.toString(fullUrl, {
+        type: "svg",
+        errorCorrectionLevel: "H",
+        width: 300,
+      });
+    }
+
+    const qrBuffer = await QRCode.toBuffer(fullUrl, {
+      type: "png",
+      width: 300,
+      errorCorrectionLevel: 'H'
+    });
+    return qrBuffer;
   }
 
 }
