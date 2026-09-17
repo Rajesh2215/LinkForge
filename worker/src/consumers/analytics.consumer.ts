@@ -1,6 +1,7 @@
 import { Kafka } from "kafkajs";
 import { UAParser } from "ua-parser-js";
 import { prisma } from "../lib/prisma";
+import geoip from 'geoip-lite'
 
 const kafka = new Kafka({
   clientId: "linkforge-worker",
@@ -35,7 +36,7 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
             const uaResult = parser.getResult();
             const browser = uaResult.browser.name || "Unknown";
             const device = uaResult.device.type || "Desktop";
-
+            const geo = geoip.lookup(event.ipAddress);
             recordsToInsert.push({
               eventId: event.eventId,
               shortCode: event.shortCode,
@@ -45,7 +46,7 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
               browser,
               device,
               referer: event.referer || "Direct",
-              country: "Unknown",
+              country: geo?.country || "Unknown",
             });
 
             // Mark this message offset as resolved in memory

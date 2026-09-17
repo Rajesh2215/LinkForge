@@ -151,8 +151,13 @@ export class UrlService {
     if (!record) {
       return null;
     }
-    const [totalClicks, browserCounts, deviceCounts, refererCounts, recentClicks] = await Promise.all([
+    const [totalClicks, countryCounts, browserCounts, deviceCounts, refererCounts, recentClicks] = await Promise.all([
       prisma.clickEvent.count({ where: { shortCode } }),
+      prisma.clickEvent.groupBy({
+        by: ["country"],
+        where: { shortCode },
+        _count: { country: true },
+      }),
       prisma.clickEvent.groupBy({
         by: ["browser"],
         where: { shortCode },
@@ -177,6 +182,7 @@ export class UrlService {
           browser: true,
           device: true,
           referer: true,
+          country: true,
         },
       }),
     ]);
@@ -186,6 +192,7 @@ export class UrlService {
       originalUrl: record.url,
       totalClicks,
       breakdown: {
+        country: countryCounts.map((row) => ({ name: row.country || "Unknown", count: row._count.country })),
         browser: browserCounts.map((row) => ({ name: row.browser || "Unknown", count: row._count.browser })),
         device: deviceCounts.map((row) => ({ name: row.device || "Unknown", count: row._count.device })),
         referer: refererCounts.map((row) => ({ name: row.referer || "Unknown", count: row._count.referer })),
