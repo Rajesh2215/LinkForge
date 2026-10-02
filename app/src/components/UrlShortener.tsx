@@ -11,7 +11,7 @@ interface UrlShortenerProps {
 }
 
 export default function UrlShortener({ onOpenQr, onSelectAnalytics }: UrlShortenerProps) {
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState('https://github.com/react');
   const [customAlias, setCustomAlias] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
   const [showOptions, setShowOptions] = useState(false);

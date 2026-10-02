@@ -201,6 +201,7 @@ export class UrlService {
           browser: click.browser || "Unknown",
           device: click.device || "Unknown",
           referer: click.referer || "Direct",
+          country: click.country || "Unknown",
         })),
       },
     };
