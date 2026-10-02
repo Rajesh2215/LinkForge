@@ -15,7 +15,7 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
-      '^/[a-zA-Z0-9_-]{3,20}$': {
+      '^/[a-zA-Z0-9_-]{3,20}(\\?.*)?$': {
         target: 'http://localhost:3000',
         changeOrigin: true,
         bypass(req) {

@@ -10,9 +10,10 @@ import './UrlShortener.css';
 interface UrlShortenerProps {
   onOpenQr?: (shortCode: string) => void;
   onSelectAnalytics?: (shortCode: string) => void;
+  onLinkCreated?: (link: ShortenedUrl) => void;
 }
 
-export default function UrlShortener({ onOpenQr, onSelectAnalytics }: UrlShortenerProps) {
+export default function UrlShortener({ onOpenQr, onSelectAnalytics, onLinkCreated }: UrlShortenerProps) {
   const navigate = useNavigate();
   const [url, setUrl] = useState('https://github.com/react');
   const [customAlias, setCustomAlias] = useState('');
@@ -39,6 +40,7 @@ export default function UrlShortener({ onOpenQr, onSelectAnalytics }: UrlShorten
 
       if (res.data) {
         setResult(res.data);
+        onLinkCreated?.(res.data);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to shorten URL');
