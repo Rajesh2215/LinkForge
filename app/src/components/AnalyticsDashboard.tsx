@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   BarChart3, Globe, Smartphone, Monitor, QrCode,
-  RefreshCw, X, ArrowUpRight, Clock, ShieldCheck, Activity
+  RefreshCw, ArrowUpRight, Clock, ShieldCheck, Activity,
+  ArrowLeft, Search
 } from 'lucide-react';
 import { api, type AnalyticsData } from '../services/api';
 import './AnalyticsDashboard.css';
-
-interface AnalyticsDashboardProps {
-  shortCode: string;
-  onClose?: () => void;
-}
 
 // Country code to flag emoji helper
 const getCountryFlag = (code: string) => {
@@ -21,22 +18,35 @@ const getCountryFlag = (code: string) => {
   return String.fromCodePoint(...codePoints);
 };
 
-export default function AnalyticsDashboard({ shortCode, onClose }: AnalyticsDashboardProps) {
+export default function AnalyticsDashboard() {
+  const { shortCode: paramCode } = useParams<{ shortCode?: string }>();
+  const navigate = useNavigate();
+
+  const activeCode = paramCode || 'V3ZTpC';
+  const [searchVal, setSearchVal] = useState(activeCode);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnalytics = async (isManual = false) => {
+  useEffect(() => {
+    if (paramCode) {
+      setSearchVal(paramCode);
+    }
+  }, [paramCode]);
+
+  const fetchAnalytics = async (codeToFetch: string, isManual = false) => {
+    if (!codeToFetch.trim()) return;
     if (isManual) setRefreshing(true);
     else setLoading(true);
     setError(null);
 
     try {
-      const res = await api.getAnalytics(shortCode);
+      const res = await api.getAnalytics(codeToFetch.trim());
       setData(res);
     } catch (err: any) {
-      setError(err.message || 'Failed to load analytics');
+      setError(err.message || `No analytics found for "/${codeToFetch}"`);
+      setData(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -44,8 +54,15 @@ export default function AnalyticsDashboard({ shortCode, onClose }: AnalyticsDash
   };
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [shortCode]);
+    fetchAnalytics(activeCode);
+  }, [activeCode]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchVal.trim()) {
+      navigate(`/analytics/${searchVal.trim()}`);
+    }
+  };
 
   // Derived metrics
   const totalClicks = data?.totalClicks || 0;
@@ -57,6 +74,14 @@ export default function AnalyticsDashboard({ shortCode, onClose }: AnalyticsDash
   return (
     <section className="analytics-section animate-fade-in">
       <div className="container">
+        {/* Navigation Breadcrumb Bar */}
+        <div className="analytics-nav-bar">
+          <Link to="/" className="btn btn-secondary btn-sm">
+            <ArrowLeft size={14} />
+            <span>Back to Shortener</span>
+          </Link>
+        </div>
+
         {/* Top Header Card */}
         <div className="analytics-header glass-panel">
           <div className="analytics-header-left">
@@ -69,15 +94,31 @@ export default function AnalyticsDashboard({ shortCode, onClose }: AnalyticsDash
                 <span className="badge badge-info">Kafka Real-Time Stream</span>
               </div>
               <p className="analytics-subtitle">
-                Short link: <code>/{shortCode}</code> → <a href={data?.originalUrl} target="_blank" rel="noreferrer">{data?.originalUrl} <ArrowUpRight size={12} /></a>
+                Short link: <code>/{activeCode}</code> {data?.originalUrl && (
+                  <>→ <a href={data.originalUrl} target="_blank" rel="noreferrer">{data.originalUrl} <ArrowUpRight size={12} /></a></>
+                )}
               </p>
             </div>
           </div>
 
           <div className="analytics-header-actions">
+            {/* Search Input for Any Short Code */}
+            <form onSubmit={handleSearchSubmit} className="search-code-form">
+              <input
+                type="text"
+                placeholder="Lookup code..."
+                value={searchVal}
+                onChange={(e) => setSearchVal(e.target.value)}
+                className="input-field search-code-input"
+              />
+              <button type="submit" className="btn btn-primary btn-sm search-btn" title="Inspect">
+                <Search size={14} />
+              </button>
+            </form>
+
             <button
               type="button"
-              onClick={() => fetchAnalytics(true)}
+              onClick={() => fetchAnalytics(activeCode, true)}
               disabled={refreshing || loading}
               className="btn btn-secondary btn-sm"
               title="Refresh Analytics"
@@ -85,11 +126,6 @@ export default function AnalyticsDashboard({ shortCode, onClose }: AnalyticsDash
               <RefreshCw size={14} className={refreshing ? 'spin-slow' : ''} />
               <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
-            {onClose && (
-              <button type="button" onClick={onClose} className="btn-close" title="Close Analytics">
-                <X size={20} />
-              </button>
-            )}
           </div>
         </div>
 

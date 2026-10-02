@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import UrlShortener from './components/UrlShortener';
 import QrModal from './components/QrModal';
@@ -6,26 +7,27 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 export default function App() {
   const [activeQrCode, setActiveQrCode] = useState<string | null>(null);
-  const [activeAnalyticsCode, setActiveAnalyticsCode] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   return (
     <>
       <Navbar />
       <main>
-        <UrlShortener
-          onOpenQr={(code) => setActiveQrCode(code)}
-          onSelectAnalytics={(code) => setActiveAnalyticsCode(code)}
-        />
-
-        {/* Analytics View */}
-        {activeAnalyticsCode && (
-          <AnalyticsDashboard
-            shortCode={activeAnalyticsCode}
-            onClose={() => setActiveAnalyticsCode(null)}
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <UrlShortener
+                onOpenQr={(code) => setActiveQrCode(code)}
+                onSelectAnalytics={(code) => navigate(`/analytics/${code}`)}
+              />
+            }
           />
-        )}
+          <Route path="/analytics/:shortCode" element={<AnalyticsDashboard />} />
+          <Route path="/analytics" element={<AnalyticsDashboard />} />
+        </Routes>
 
-        {/* QR Modal */}
+        {/* Global QR Modal */}
         {activeQrCode && (
           <QrModal
             shortCode={activeQrCode}
@@ -36,3 +38,4 @@ export default function App() {
     </>
   );
 }
+

@@ -5,6 +5,10 @@
   padding: 1rem 0 4rem;
 }
 
+.analytics-nav-bar {
+  margin-bottom: 1.25rem;
+}
+
 .analytics-header {
   display: flex;
   justify-content: space-between;
@@ -13,6 +17,22 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.search-code-form {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.search-code-input {
+  padding: 0.45rem 0.85rem !important;
+  font-size: 0.825rem !important;
+  width: 170px !important;
+}
+
+.search-btn {
+  padding: 0.45rem 0.75rem !important;
 }
 
 .analytics-header-left {

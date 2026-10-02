@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Link2, Sparkles, ChevronDown, ChevronUp, Copy, Check,
   QrCode, BarChart3, ExternalLink, Calendar, AlertCircle, ArrowRight
@@ -12,6 +13,7 @@ interface UrlShortenerProps {
 }
 
 export default function UrlShortener({ onOpenQr, onSelectAnalytics }: UrlShortenerProps) {
+  const navigate = useNavigate();
   const [url, setUrl] = useState('https://github.com/react');
   const [customAlias, setCustomAlias] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
@@ -202,16 +204,17 @@ export default function UrlShortener({ onOpenQr, onSelectAnalytics }: UrlShorten
                   </button>
                 )}
 
-                {onSelectAnalytics && (
-                  <button
-                    type="button"
-                    onClick={() => onSelectAnalytics(result.shortCode)}
-                    className="btn btn-secondary"
-                  >
-                    <BarChart3 size={16} />
-                    <span>Analytics</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectAnalytics) onSelectAnalytics(result.shortCode);
+                    else navigate(`/analytics/${result.shortCode}`);
+                  }}
+                  className="btn btn-secondary"
+                >
+                  <BarChart3 size={16} />
+                  <span>Analytics</span>
+                </button>
 
                 <a
                   href={`/${result.shortCode}`}

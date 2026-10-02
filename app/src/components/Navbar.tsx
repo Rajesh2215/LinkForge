@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Link2, Sparkles, Activity } from 'lucide-react';
 import { api } from '../services/api';
 import './Navbar.css';
@@ -39,7 +40,7 @@ export default function Navbar() {
       <div className="container">
         <nav className="navbar glass-panel">
           {/* Brand Logo */}
-          <div className="navbar-brand">
+          <Link to="/" className="navbar-brand" style={{ textDecoration: 'none' }}>
             <div className="logo-icon">
               <Link2 size={20} className="icon-glow" />
             </div>
@@ -49,7 +50,7 @@ export default function Navbar() {
                 <Sparkles size={11} /> Redis • Kafka
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Right Controls / Live Status */}
           <div className="navbar-actions">
