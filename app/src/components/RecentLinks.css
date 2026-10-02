@@ -123,19 +123,26 @@
 }
 
 .recent-link-code {
-  font-size: 1rem;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-md, 8px);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--primary-light);
+  color: #a5b4fc;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  transition: color var(--transition-fast);
+  gap: 0.45rem;
+  transition: all var(--transition-fast);
 }
 
 .recent-link-code:hover {
-  color: #fff;
-  text-decoration: underline;
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.6);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .clicks-badge {
