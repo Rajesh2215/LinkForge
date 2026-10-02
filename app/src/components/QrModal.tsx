@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Download, QrCode, Check, ExternalLink } from 'lucide-react';
+import { X, Download, QrCode } from 'lucide-react';
 import { api } from '../services/api';
+import './QrModal.css';
 
 interface QrModalProps {
   shortCode: string;

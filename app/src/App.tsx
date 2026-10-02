@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Navbar from './components/Navbar';
 import UrlShortener from './components/UrlShortener';
 import QrModal from './components/QrModal';
-import AnalyticsDashboard from './components/AnalyicsDashboard';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
 
 export default function App() {
   const [activeQrCode, setActiveQrCode] = useState<string | null>(null);

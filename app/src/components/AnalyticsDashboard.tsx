@@ -4,6 +4,7 @@ import {
   RefreshCw, X, ArrowUpRight, Clock, ShieldCheck, Activity
 } from 'lucide-react';
 import { api, type AnalyticsData } from '../services/api';
+import './AnalyticsDashboard.css';
 
 interface AnalyticsDashboardProps {
   shortCode: string;

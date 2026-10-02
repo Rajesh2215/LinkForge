@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link2, Sparkles, Activity } from 'lucide-react';
 import { api } from '../services/api';
+import './Navbar.css';
 
 type ServerStatus = 'checking' | 'online' | 'offline';
 

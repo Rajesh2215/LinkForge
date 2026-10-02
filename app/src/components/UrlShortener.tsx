@@ -4,6 +4,7 @@ import {
   QrCode, BarChart3, ExternalLink, Calendar, AlertCircle, ArrowRight
 } from 'lucide-react';
 import { api, type ShortenedUrl } from '../services/api';
+import './UrlShortener.css';
 
 interface UrlShortenerProps {
   onOpenQr?: (shortCode: string) => void;
