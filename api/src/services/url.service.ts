@@ -1,7 +1,9 @@
 import QRCode from 'qrcode';
 import { prisma } from "../lib/prisma";
 import { setCacheRecord, getCacheRecord, deleteCacheRecord } from "../lib/redis";
-import { generateShortCode } from "../utils/base62";
+import { encodeBase62 } from '../utils/base62';
+import { idGenerator } from './idGenerator.service';
+
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -79,12 +81,9 @@ export class UrlService {
       code = customAlias;
     } else {
 
-      code = generateShortCode();
-      while (await prisma.url.findUnique({
-        where: { shortCode: code },
-      })) {
-        code = generateShortCode();
-      }
+      // 🚀 Instant O(1) Unique Code Generation - NO WHILE LOOP, NO DB READS!
+      const uniqueId = await idGenerator.nextId();
+      code = encodeBase62(uniqueId);
     }
 
     const record = await prisma.url.create({
