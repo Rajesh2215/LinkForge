@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 2s
+  evaluation_interval: 2s # Prometheus evaluates all defined alerting and recording rules every 2 seconds.
+
+scrape_configs:
+  - job_name: "linkforge-api"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["host.docker.internal:3000"]

@@ -12,7 +12,11 @@ export const consumer = kafka.consumer({
   groupId: "linkforge-analytics-group",
   maxWaitTimeInMs: 5000,    // will trigger eachbatch after 5 seconds if there are no messages
   maxBytes: 1024 * 512,     // will trigger eachbatch after 512 bytes of messages
+  minBytes: 1024 * 16,
 });
+
+let totalBatchesProcessed = 0;
+let totalClicksProcessed = 0;
 
 export const startAnalyticsConsumer = async (): Promise<void> => {
   try {
@@ -20,6 +24,8 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
     await consumer.subscribe({ topic: 'url-clicks', fromBeginning: false })
     await consumer.run({
       eachBatch: async ({ batch, resolveOffset, heartbeat, isRunning, isStale }) => {
+        totalBatchesProcessed++;
+        const batchStartTime = Date.now();
         const recordsToInsert = [];
 
         // 1. Loop through batch ONLY to parse and enrich
@@ -64,8 +70,12 @@ export const startAnalyticsConsumer = async (): Promise<void> => {
               skipDuplicates: true, // Idempotent
             });
 
+            totalClicksProcessed += result.count;
+            const durationMs = Date.now() - batchStartTime;
+
             console.log(
-              `📊 Batch processed: ${result.count} new clicks recorded (Batch size: ${recordsToInsert.length})`
+              `⚡ [Batch #${totalBatchesProcessed}] Inserted ${result.count} clicks in ${durationMs}ms ` +
+              `| Batch Msg Count: ${batch.messages.length} | Cumulative Clicks: ${totalClicksProcessed}`
             );
           } catch (error) {
             console.error("Failed to bulk insert click events:", error);

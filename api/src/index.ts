@@ -7,6 +7,7 @@ import apiRouter from './routes';
 import { urlController } from './controller/url.controller';
 import { rateLimiter } from './lib/rateLimiter';
 import { initKafkaProducer, disconnectKafkaProducer } from './lib/kafka';
+import { metricsMiddleware, register } from './lib/metrics';
 
 dotenv.config();
 
@@ -14,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const redirectUrlLimiter = rateLimiter({
   windowMs: 60 * 1000,
-  limit: 10,
+  limit: process.env.RATE_LIMIT_REDIRECT_MAX ? parseInt(process.env.RATE_LIMIT_REDIRECT_MAX, 10) : 1000000,
   keyPrefix: "redirect-url",
   standardHeaders: true,
   legacyHeaders: false,
@@ -22,6 +23,7 @@ const redirectUrlLimiter = rateLimiter({
 
 app.use(helmet());
 app.use(cors());
+app.use(metricsMiddleware);
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,6 +34,11 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date(),
     uptime: process.uptime(),
   });
+});
+
+app.get('/metrics', async (_req: Request, res: Response) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 app.get('/', (req: Request, res: Response) => {

@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import { setCacheRecord, getCacheRecord, deleteCacheRecord } from "../lib/redis";
 import { encodeBase62 } from '../utils/base62';
 import { idGenerator } from './idGenerator.service';
+import { recordCacheHit } from '../lib/metrics';
 
 export class ValidationError extends Error {
   constructor(message: string) {
@@ -114,9 +115,11 @@ export class UrlService {
 
     const cachedRecord = await getCacheRecord(shortCode);
     if (cachedRecord) {
+      recordCacheHit('hit');
       return { record: JSON.parse(cachedRecord), isExpired: false };
     }
 
+    recordCacheHit('miss');
     const record = await prisma.url.findUnique({
       where: { shortCode },
     });
