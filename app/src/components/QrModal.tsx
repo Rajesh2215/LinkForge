@@ -84,7 +84,7 @@ export default function QrModal({ shortCode, onClose }: QrModalProps) {
 
         {/* Attribution Notice */}
         <div className="attribution-note">
-          <span>✨ Includes <code>?src=qr</code> for Kafka scan tracking</span>
+          <span>✨ Includes <code>?src=qr</code> for scan tracking</span>
         </div>
 
         {/* Footer Actions */}

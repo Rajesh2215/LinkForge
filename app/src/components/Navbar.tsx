@@ -47,7 +47,7 @@ export default function Navbar() {
             <div className="brand-text">
               <span className="brand-title gradient-text">LinkForge</span>
               <span className="brand-badge">
-                <Sparkles size={11} /> Redis • Kafka
+                <Sparkles size={11} /> Fast • Reliable
               </span>
             </div>
           </Link>

@@ -3,9 +3,10 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   BarChart3, Globe, Smartphone, Monitor, QrCode,
   RefreshCw, ArrowUpRight, Clock, ShieldCheck, Activity,
-  ArrowLeft, Search
+  ArrowLeft, Link2, ChevronDown
 } from 'lucide-react';
 import { api, type AnalyticsData } from '../services/api';
+import { useRecentLinks } from '../hooks/useRecentLinks';
 import './AnalyticsDashboard.css';
 
 // Country code to flag emoji helper
@@ -21,19 +22,13 @@ const getCountryFlag = (code: string) => {
 export default function AnalyticsDashboard() {
   const { shortCode: paramCode } = useParams<{ shortCode?: string }>();
   const navigate = useNavigate();
+  const { links } = useRecentLinks();
 
-  const activeCode = paramCode || 'V3ZTpC';
-  const [searchVal, setSearchVal] = useState(activeCode);
+  const activeCode = paramCode || (links.length > 0 ? links[0].shortCode : 'V3ZTpC');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (paramCode) {
-      setSearchVal(paramCode);
-    }
-  }, [paramCode]);
 
   const fetchAnalytics = async (codeToFetch: string, isManual = false) => {
     if (!codeToFetch.trim()) return;
@@ -56,13 +51,6 @@ export default function AnalyticsDashboard() {
   useEffect(() => {
     fetchAnalytics(activeCode);
   }, [activeCode]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchVal.trim()) {
-      navigate(`/analytics/${searchVal.trim()}`);
-    }
-  };
 
   // Derived metrics
   const totalClicks = data?.totalClicks || 0;
@@ -91,7 +79,7 @@ export default function AnalyticsDashboard() {
             <div>
               <div className="analytics-title-row">
                 <h2>Telemetry & Click Analytics</h2>
-                <span className="badge badge-info">Kafka Real-Time Stream</span>
+                <span className="badge badge-info">Real-Time</span>
               </div>
               <p className="analytics-subtitle">
                 Short link: <code>/{activeCode}</code> {data?.originalUrl && (
@@ -102,19 +90,39 @@ export default function AnalyticsDashboard() {
           </div>
 
           <div className="analytics-header-actions">
-            {/* Search Input for Any Short Code */}
-            <form onSubmit={handleSearchSubmit} className="search-code-form">
-              <input
-                type="text"
-                placeholder="Lookup code..."
-                value={searchVal}
-                onChange={(e) => setSearchVal(e.target.value)}
-                className="input-field search-code-input"
-              />
-              <button type="submit" className="btn btn-primary btn-sm search-btn" title="Inspect">
-                <Search size={14} />
-              </button>
-            </form>
+            {/* Created Links Dropdown */}
+            <div className="recent-links-dropdown-wrap" title="Select created short code">
+              <Link2 size={13} className="dropdown-left-icon" />
+              <select
+                value={activeCode}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    navigate(`/analytics/${e.target.value}`);
+                  }
+                }}
+                disabled={links.length === 0}
+                className="input-field recent-links-select"
+                aria-label="Select short code"
+              >
+                {links.length === 0 ? (
+                  <option value="" disabled>
+                    No links created
+                  </option>
+                ) : (
+                  <>
+                    {!links.some((l) => l.shortCode === activeCode) && (
+                      <option value={activeCode}>{activeCode}</option>
+                    )}
+                    {links.map((link) => (
+                      <option key={link.shortCode} value={link.shortCode}>
+                        {link.shortCode}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <ChevronDown size={13} className="dropdown-chevron" />
+            </div>
 
             <button
               type="button"
@@ -133,7 +141,7 @@ export default function AnalyticsDashboard() {
         {loading && (
           <div className="loading-card glass-panel">
             <Activity size={24} className="spin-slow" />
-            <p>Aggregating click metrics from PostgreSQL...</p>
+            <p>Loading analytics data...</p>
           </div>
         )}
 
@@ -155,7 +163,7 @@ export default function AnalyticsDashboard() {
                 <div className="kpi-data">
                   <span className="kpi-label">Total Clicks</span>
                   <strong className="kpi-value gradient-text">{totalClicks.toLocaleString()}</strong>
-                  <span className="kpi-subtext">Processed via Kafka batching</span>
+                  <span className="kpi-subtext">Total recorded visits</span>
                 </div>
               </div>
 
@@ -168,7 +176,7 @@ export default function AnalyticsDashboard() {
                   <strong className="kpi-value">
                     {getCountryFlag(topCountry)} {topCountry}
                   </strong>
-                  <span className="kpi-subtext">Enriched via geoip-lite</span>
+                  <span className="kpi-subtext">Top visitor country</span>
                 </div>
               </div>
 
@@ -181,7 +189,7 @@ export default function AnalyticsDashboard() {
                   <strong className="kpi-value">
                     {qrClicks} <span className="kpi-pill">({qrPercentage}%)</span>
                   </strong>
-                  <span className="kpi-subtext">Physical camera attribution</span>
+                  <span className="kpi-subtext">Camera & QR attribution</span>
                 </div>
               </div>
 
@@ -192,7 +200,7 @@ export default function AnalyticsDashboard() {
                 <div className="kpi-data">
                   <span className="kpi-label">Primary Device</span>
                   <strong className="kpi-value">{topDevice}</strong>
-                  <span className="kpi-subtext">Parsed via ua-parser-js</span>
+                  <span className="kpi-subtext">Most active platform</span>
                 </div>
               </div>
             </div>
@@ -272,14 +280,14 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* Recent Clicks Stream Table */}
+            {/* Recent Clicks Table */}
             <div className="card mt-4">
               <div className="breakdown-header">
                 <div className="breakdown-title">
                   <Clock size={18} className="text-purple" />
-                  <h3>Recent Click Stream</h3>
+                  <h3>Recent Clicks</h3>
                 </div>
-                <span className="badge badge-info">Latest 10 Events</span>
+                <span className="badge badge-info">Latest 10 Visits</span>
               </div>
 
               <div className="table-responsive">

@@ -63,15 +63,15 @@ export default function UrlShortener({ onOpenQr, onSelectAnalytics, onLinkCreate
         {/* Hero Headline */}
         <div className="hero-text text-center">
           <div className="badge badge-info mb-3">
-            <Sparkles size={12} /> Sub-2ms Redirects • Kafka Click Stream
+            <Sparkles size={12} /> Instant Redirects • Real-Time Tracking
           </div>
           <h1 className="hero-title">
             Shorten Links. Analyze Traffic. <br />
             <span className="gradient-text">Zero Latency.</span>
           </h1>
           <p className="hero-subtitle">
-            Enterprise URL shortener backed by Redis Cache-Aside, BullMQ cron expiry,
-            and real-time Kafka event streaming.
+            Modern URL shortener with ultra-fast redirects, custom expiration dates,
+            and real-time click analytics.
           </p>
         </div>
 

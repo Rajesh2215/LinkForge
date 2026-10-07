@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  Link2, Copy, Check, QrCode, BarChart3, ExternalLink,
+  Link2, Copy, Check, QrCode, BarChart3,
   Trash2, RefreshCw, Clock, ArrowUpRight
 } from 'lucide-react';
 import type { RecentLink } from '../hooks/useRecentLinks';

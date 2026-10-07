@@ -24,15 +24,6 @@ export function useRecentLinks() {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  // Sync to localStorage whenever links state changes
-  const saveLinks = useCallback((newLinks: RecentLink[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newLinks));
-      setLinks(newLinks);
-    } catch (err) {
-      console.error('Failed to save recent links to localStorage:', err);
-    }
-  }, []);
 
   // Listen for storage changes across browser tabs
   useEffect(() => {
